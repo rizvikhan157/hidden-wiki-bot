@@ -10,7 +10,7 @@ bot.on('text', async (ctx) => {
   const message = ctx.message.text;
 
   try {
-    // Primary API: Gemini
+    // Primary: Gemini 3.8 Flash
     const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
     const result = await model.generateContent(message);
 
@@ -20,9 +20,9 @@ bot.on('text', async (ctx) => {
     console.error('Gemini Error:', geminiErr);
 
     try {
-      // Backup API: Groq
+      // Backup: Groq Llama 3 8B (Super Stable)
       const completion = await groq.chat.completions.create({
-        model: 'gemma2-9b-it',
+        model: 'llama3-8b-8192',
         messages: [{ role: 'user', content: message }],
       });
 
