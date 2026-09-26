@@ -10,21 +10,29 @@ bot.on('text', async (ctx) => {
   const message = ctx.message.text;
   
   try {
+    // Groq-er maddhome DeepSeek R1 model call
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: message }],
-      model: 'llama-3.1-8b-instant',
+      model: 'deepseek-r1-distill-llama-70b', // DeepSeek Free Model
     });
-    return await ctx.reply(completion.choices[0].message.content);
+
+    let replyText = completion.choices[0].message.content || '';
+    
+    // DeepSeek-er internal reasoning (<think>...</think>) tag muche clean output neyar jonno:
+    replyText = replyText.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+    return await ctx.reply(replyText || 'Kono uttor paoya jayni.');
   } catch (groqErr) {
     console.error('Groq Error:', groqErr);
     try {
+      // Gemini Fallback Fix
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const result = await model.generateContent(message);
       return await ctx.reply(result.response.text());
     } catch (geminiErr) {
       console.error('Gemini Error:', geminiErr);
       return await ctx.reply(
-        `API Execution Failed:\n\n1. Groq: ${groqErr.message}\n2. Gemini: ${geminiErr.message}`
+        `API Execution Failed:\n\n1. DeepSeek (Groq): ${groqErr.message}\n2. Gemini: ${geminiErr.message}`
       );
     }
   }
