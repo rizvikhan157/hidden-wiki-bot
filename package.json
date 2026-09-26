@@ -1,11 +1,11 @@
 {
   "name": "hidden-wiki-bot",
   "version": "1.0.0",
-  "scripts": {
-    "dev": "vercel dev"
-  },
+  "description": "Telegram AI Bot",
+  "main": "api/index.js",
   "dependencies": {
-    "@google/generative-ai": "^0.1.0",
-    "groq-sdk": "^0.3.0"
+    "@google/generative-ai": "^0.21.0",
+    "groq-sdk": "^0.7.0",
+    "telegraf": "^4.16.3"
   }
 }
