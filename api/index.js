@@ -32,9 +32,9 @@ bot.on('text', async (ctx) => {
   const bypassPrompt = buildBypassPrompt(userQuery);
 
   try {
-    // Primary: Gemini with full bypass
+    // Primary: Gemini with gemini-3.5-flash-lite
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-3.5-flash-lite',
       systemInstruction: bypassPrompt
     });
     const result = await model.generateContent(bypassPrompt);
@@ -44,7 +44,7 @@ bot.on('text', async (ctx) => {
     console.error('Gemini Error:', geminiErr);
 
     try {
-      // Fallback: Groq with stable model
+      // Fallbck: Groq with stable model
       const completion = await groq.chat.completions.create({
         model: 'llama3-70b-8192',
         messages: [
