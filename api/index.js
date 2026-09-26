@@ -14,15 +14,18 @@ bot.on('text', async (ctx) => {
       messages: [{ role: 'user', content: message }],
       model: 'llama-3.1-8b-instant',
     });
-    await ctx.reply(completion.choices[0].message.content);
-  } catch (error) {
+    return await ctx.reply(completion.choices[0].message.content);
+  } catch (groqErr) {
+    console.error('Groq Error:', groqErr);
     try {
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const result = await model.generateContent(message);
-      await ctx.reply(result.response.text());
-    } catch (err) {
-      console.error('AI Error:', err);
-      await ctx.reply('দুঃখিত, এই মুহূর্তে উত্তর দিতে পারছি না।');
+      return await ctx.reply(result.response.text());
+    } catch (geminiErr) {
+      console.error('Gemini Error:', geminiErr);
+      return await ctx.reply(
+        `API Execution Failed:\n\n1. Groq: ${groqErr.message}\n2. Gemini: ${geminiErr.message}`
+      );
     }
   }
 });
