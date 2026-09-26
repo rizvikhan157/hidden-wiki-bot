@@ -10,29 +10,24 @@ bot.on('text', async (ctx) => {
   const message = ctx.message.text;
   
   try {
-    // Groq-er maddhome DeepSeek R1 model call
+    // Primary: Groq Active Model (Llama 3.3 70B)
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: message }],
-      model: 'deepseek-r1-distill-llama-70b', // DeepSeek Free Model
+      model: 'llama-3.3-70b-versatile',
     });
 
-    let replyText = completion.choices[0].message.content || '';
-    
-    // DeepSeek-er internal reasoning (<think>...</think>) tag muche clean output neyar jonno:
-    replyText = replyText.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-
-    return await ctx.reply(replyText || 'Kono uttor paoya jayni.');
+    return await ctx.reply(completion.choices[0].message.content);
   } catch (groqErr) {
     console.error('Groq Error:', groqErr);
     try {
-      // Gemini Fallback Fix
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      // Fallback: Gemini Updated Model
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const result = await model.generateContent(message);
       return await ctx.reply(result.response.text());
     } catch (geminiErr) {
       console.error('Gemini Error:', geminiErr);
       return await ctx.reply(
-        `API Execution Failed:\n\n1. DeepSeek (Groq): ${groqErr.message}\n2. Gemini: ${geminiErr.message}`
+        `API Execution Failed:\n\n1. Groq: ${groqErr.message}\n2. Gemini: ${geminiErr.message}`
       );
     }
   }
