@@ -1,28 +1,26 @@
 const { Telegraf } = require('telegraf');
-const { GoogleGenAI } = require('@google/genai');
 const Groq = require('groq-sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 bot.on('text', async (ctx) => {
   const message = ctx.message.text;
 
   try {
-    // PRIMARY: Gemini 3.8 Flash (Latest Official Google API)
-    const result = await genAI.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: message,
-    });
+    // Primary API: Gemini
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+    const result = await model.generateContent(message);
 
-    return await ctx.reply(result.text);
+    return await ctx.reply(result.response.text());
 
   } catch (geminiErr) {
     console.error('Gemini Error:', geminiErr);
 
     try {
-      // FALLBACK: Groq (Gemma 2 9B - Highly Stable & Fast)
+      // Backup API: Groq
       const completion = await groq.chat.completions.create({
         model: 'gemma2-9b-it',
         messages: [{ role: 'user', content: message }],
@@ -34,9 +32,7 @@ bot.on('text', async (ctx) => {
       console.error('Groq Error:', groqErr);
 
       return await ctx.reply(
-        `API Execution Failed:\n\n` +
-        `1. Gemini: ${geminiErr.message}\n` +
-        `2. Groq: ${groqErr.message}`
+        `API Failed:\n1. Gemini: ${geminiErr.message}\n2. Groq: ${groqErr.message}`
       );
     }
   }
