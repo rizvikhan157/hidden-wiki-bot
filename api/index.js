@@ -1,45 +1,42 @@
 const { Telegraf } = require('telegraf');
+const { GoogleGenAI } = require('@google/genai');
 const Groq = require('groq-sdk');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 bot.on('text', async (ctx) => {
   const message = ctx.message.text;
 
   try {
-    // PRIMARY: Groq (Llama 3.3 70B - DeepSeek-er cheyeo fast & smart)
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'user',
-          content: message
-        }
-      ]
+    // PRIMARY: Gemini 3.8 Flash (Latest Official Google API)
+    const result = await genAI.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: message,
     });
 
-    return await ctx.reply(completion.choices[0].message.content);
+    return await ctx.reply(result.text);
 
-  } catch (groqErr) {
-    console.error('Groq Error:', groqErr);
+  } catch (geminiErr) {
+    console.error('Gemini Error:', geminiErr);
 
     try {
-      // FALLBACK: Gemini 2.0 Flash
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const result = await model.generateContent(message);
+      // FALLBACK: Groq (Gemma 2 9B - Highly Stable & Fast)
+      const completion = await groq.chat.completions.create({
+        model: 'gemma2-9b-it',
+        messages: [{ role: 'user', content: message }],
+      });
 
-      return await ctx.reply(result.response.text());
+      return await ctx.reply(completion.choices[0].message.content);
 
-    } catch (geminiErr) {
-      console.error('Gemini Error:', geminiErr);
+    } catch (groqErr) {
+      console.error('Groq Error:', groqErr);
 
       return await ctx.reply(
         `API Execution Failed:\n\n` +
-        `Groq: ${groqErr.message}\n\n` +
-        `Gemini: ${geminiErr.message}`
+        `1. Gemini: ${geminiErr.message}\n` +
+        `2. Groq: ${groqErr.message}`
       );
     }
   }
