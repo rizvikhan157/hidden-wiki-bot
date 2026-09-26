@@ -1,39 +1,60 @@
 const { Telegraf } = require('telegraf');
 const Groq = require('groq-sdk');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
+
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY
+});
 
 bot.on('text', async (ctx) => {
   const message = ctx.message.text;
-  
+
   try {
-    // Primary: Groq Active Model (Llama 3.3 70B)
+    // PRIMARY: Groq GPT-OSS 120B
     const completion = await groq.chat.completions.create({
-      messages: [{ role: 'user', content: message }],
-      model: 'llama-3.3-70b-versatile',
+      model: 'openai/gpt-oss-120b',
+      messages: [
+        {
+          role: 'user',
+          content: message
+        }
+      ]
     });
 
-    return await ctx.reply(completion.choices[0].message.content);
+    return await ctx.reply(
+      completion.choices[0].message.content
+    );
+
   } catch (groqErr) {
     console.error('Groq Error:', groqErr);
+
     try {
-      // Fallback: Gemini Updated Model
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-      const result = await model.generateContent(message);
-      return await ctx.reply(result.response.text());
+      // FALLBACK: Gemini 3.8 Flash
+      const result = await genAI.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: message
+      });
+
+      return await ctx.reply(result.text);
+
     } catch (geminiErr) {
       console.error('Gemini Error:', geminiErr);
+
       return await ctx.reply(
-        `API Execution Failed:\n\n1. Groq: ${groqErr.message}\n2. Gemini: ${geminiErr.message}`
+        `API Execution Failed:\n\n` +
+        `Groq: ${groqErr.message}\n\n` +
+        `Gemini: ${geminiErr.message}`
       );
     }
   }
 });
 
-// Vercel Serverless Function Handler
 module.exports = async (req, res) => {
   if (req.method === 'POST') {
     try {
@@ -44,5 +65,6 @@ module.exports = async (req, res) => {
       return res.status(500).send('Error');
     }
   }
+
   return res.status(200).send('Telegram Bot is active on Vercel!');
 };
