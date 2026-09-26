@@ -1,24 +1,18 @@
 const { Telegraf } = require('telegraf');
 const Groq = require('groq-sdk');
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
-
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY
-});
-
-const genAI = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY
-});
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 bot.on('text', async (ctx) => {
   const message = ctx.message.text;
 
   try {
-    // PRIMARY: Groq GPT-OSS 120B
+    // PRIMARY: Groq (Llama 3.3 70B - DeepSeek-er cheyeo fast & smart)
     const completion = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-120b',
+      model: 'llama-3.3-70b-versatile',
       messages: [
         {
           role: 'user',
@@ -27,21 +21,17 @@ bot.on('text', async (ctx) => {
       ]
     });
 
-    return await ctx.reply(
-      completion.choices[0].message.content
-    );
+    return await ctx.reply(completion.choices[0].message.content);
 
   } catch (groqErr) {
     console.error('Groq Error:', groqErr);
 
     try {
-      // FALLBACK: Gemini 3.8 Flash
-      const result = await genAI.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: message
-      });
+      // FALLBACK: Gemini 2.0 Flash
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const result = await model.generateContent(message);
 
-      return await ctx.reply(result.text);
+      return await ctx.reply(result.response.text());
 
     } catch (geminiErr) {
       console.error('Gemini Error:', geminiErr);
