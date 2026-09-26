@@ -1,6 +1,6 @@
-import { Telegraf } from 'telegraf';
-import Groq from 'groq-sdk';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+const { Telegraf } = require('telegraf');
+const Groq = require('groq-sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -27,8 +27,8 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// Vercel Serverless Function Handler (Webhook-এর জন্য আবশ্যিক)
-export default async function handler(req, res) {
+// Vercel Serverless Function Handler
+module.exports = async (req, res) => {
   if (req.method === 'POST') {
     try {
       await bot.handleUpdate(req.body);
@@ -39,4 +39,4 @@ export default async function handler(req, res) {
     }
   }
   return res.status(200).send('Telegram Bot is active on Vercel!');
-}
+};
