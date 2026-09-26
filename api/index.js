@@ -10,8 +10,8 @@ bot.on('text', async (ctx) => {
   const message = ctx.message.text;
 
   try {
-    // Primary: Gemini 3.8 Flash
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
+    // Primary: Gemini 2.5 Flash (stable, GA)
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await model.generateContent(message);
 
     return await ctx.reply(result.response.text());
@@ -20,9 +20,9 @@ bot.on('text', async (ctx) => {
     console.error('Gemini Error:', geminiErr);
 
     try {
-      // Backup: Groq Llama 3 8B (Super Stable)
+      // Backup: Groq GPT-OSS 20B (fast + stable replacement for llama3-8b)
       const completion = await groq.chat.completions.create({
-        model: 'llama3-8b-8192',
+        model: 'openai/gpt-oss-20b',
         messages: [{ role: 'user', content: message }],
       });
 
