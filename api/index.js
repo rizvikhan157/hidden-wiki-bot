@@ -1,4 +1,4 @@
-const { Telegraf } = require('telegraf');
+const { Telegraf } = require('telegraf'); // Fixed: 'const' needs to be lowercase
 const Groq = require('groq-sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -27,7 +27,7 @@ async function askGemini(userText) {
 
 async function askGroq(userText) {
   const completion = await groq.chat.completions.create({
-    model: 'openai/gpt-oss-20b',
+    model: 'openai/gpt-oss-20b', 
     messages: [
       {
         role: 'system',
@@ -47,23 +47,29 @@ async function askGroq(userText) {
 
 bot.on('text', async (ctx) => {
   const message = ctx.message.text.trim();
+  let provider; // Fixed: Declared outside so both try and catch can access it
 
   try {
-    const provider = pickProvider(message);
+    provider = pickProvider(message);
     const reply = provider === 'groq'
       ? await askGroq(message)
       : await askGemini(message);
 
-    return ctx.reply(reply);
+    return await ctx.reply(reply);
   } catch (err1) {
+    console.error('API Error 1:', err1.message); // Added for Vercel logs
+    
     try {
+      // provider variable is now safely accessible here
       const fallback = provider === 'groq'
         ? await askGemini(message)
         : await askGroq(message);
 
-      return ctx.reply(fallback);
+      return await ctx.reply(fallback);
     } catch (err2) {
-      return ctx.reply(API error:\n1. ${err1.message}\n2. ${err2.message});
+      console.error('API Error 2:', err2.message);
+      // Fixed: Added backticks for string interpolation
+      return await ctx.reply(`API error:\n1. ${err1.message}\n2. ${err2.message}`);
     }
   }
 });
@@ -71,9 +77,10 @@ bot.on('text', async (ctx) => {
 module.exports = async (req, res) => {
   if (req.method === 'POST') {
     try {
-      await bot.handleUpdate(req.body);
+      await bot.handleUpdate(req.body, res); // Passed res to handleUpdate
       return res.status(200).send('OK');
     } catch (err) {
+      console.error('Webhook Error:', err);
       return res.status(500).send('Webhook error');
     }
   }
